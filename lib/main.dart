@@ -13,8 +13,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://benmsdcykymxqceibdok.supabase.co',
-    publishableKey: 'sb_publishable_0IaqK3nfqsPjlGCftwFJKQ_VZvXZAqX',
+    url: 'https://kbkzbdidvpskssjvoxor.supabase.co',
+    publishableKey: 'sb_publishable_6GyZDug44K5tjxkFGSbqZw_sZkd_3Yp',
   );
 
   runApp(const ClientApp());
@@ -489,61 +489,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
-
-                            // DYNAMIC GUEST MODE BUTTON (CONDITIONED ON DATABASE FEATURE FLAG)
-                            if (isGuestModeEnabled) ...[
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Divider(color: Colors.grey.shade300),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                    ),
-                                    child: Text(
-                                      'OR',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Divider(color: Colors.grey.shade300),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              OutlinedButton.icon(
-                                onPressed: _handleGuestLogin,
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF2E7D32),
-                                  padding: const EdgeInsets.all(12),
-                                  side: const BorderSide(
-                                    color: Color(0xFF81C784),
-                                    width: 1.5,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                icon: const Icon(
-                                  Icons.person_pin_rounded,
-                                  size: 20,
-                                  color: Color(0xFF2E7D32),
-                                ),
-                                label: const Text(
-                                  'Continue as Guest',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       );
