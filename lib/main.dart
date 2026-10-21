@@ -48,7 +48,7 @@ class UserProfileData {
   factory UserProfileData.fromJson(Map<String, dynamic> json) {
     return UserProfileData(
       email: json['email'] ?? '',
-      username: json['username'] ?? 'Guest',
+      username: json['username'] ?? 'HNB Cherished Moments',
       designation: json['designation'] ?? 'VIP Corporate Guest',
       photoUrl: json['photo_url'],
     );
@@ -99,12 +99,12 @@ final GoRouter _router = GoRouter(
         final clientId = state.pathParameters['clientId'] ?? 'client1';
         final userProfile =
             (state.extra as UserProfileData?) ??
-                UserProfileData.loadFromStorage() ??
-                UserProfileData(
-                  email: 'guest@hnb.com',
-                  username: 'Guest',
-                  designation: 'VIP Guest',
-                );
+            UserProfileData.loadFromStorage() ??
+            UserProfileData(
+              email: 'Team Virtusa - Huntington',
+              username: 'Virtusa - Huntington Cherished Moments',
+              designation: 'Guest',
+            );
         return ClientDashboard(clientId: clientId, userProfile: userProfile);
       },
       redirect: (context, state) {
@@ -160,20 +160,35 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  late Future<Map<String, dynamic>?> _loginConfigFuture;
+  late final Future<Map<String, dynamic>?> _loginConfigFuture;
+  late final Future<Map<String, dynamic>?> _internalPortalConfigFuture;
 
   @override
   void initState() {
     super.initState();
     _loginConfigFuture = _fetchLoginConfig();
+    _internalPortalConfigFuture = _fetchInternalPortalConfig();
   }
 
   Future<Map<String, dynamic>?> _fetchLoginConfig() async {
     try {
-      final response = await supabase
+      final response = await Supabase.instance.client
           .from('login_config')
           .select()
           .limit(1)
+          .maybeSingle();
+      return response;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> _fetchInternalPortalConfig() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('internal_portal_config')
+          .select()
+          .eq('key', 'guest_config')
           .maybeSingle();
       return response;
     } catch (_) {
@@ -188,11 +203,19 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleGuestLogin() {
+  void _handleGuestLogin(Map<String, dynamic> portalConfig) {
+    final guestEmail =
+        portalConfig['guest_email'] ?? 'Virtusa - Huntington Cherished Moments';
+    final guestUsername =
+        portalConfig['guest_username'] ??
+        'To Virtusa - Huntington Cherished Moments';
+    final guestDesignation =
+        portalConfig['guest_designation'] ?? 'VIR Corporate Guest';
+
     final guestProfile = UserProfileData(
-      email: 'guest@hnb.com',
-      username: 'Guest',
-      designation: 'VIP Guest',
+      email: guestEmail,
+      username: guestUsername,
+      designation: guestDesignation,
     );
 
     UserProfileData.saveToStorage(guestProfile);
@@ -210,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final enteredPassword = _passwordController.text.trim();
 
     try {
-      final response = await supabase
+      final response = await Supabase.instance.client
           .from('client_profiles')
           .select()
           .eq('email', enteredEmail)
@@ -243,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() {
           _isLoading = false;
           _errorMessage =
-          'Access Denied: Account not found in client database.';
+              'Access Denied: Account not found in client database.';
         });
       }
     } catch (e) {
@@ -310,9 +333,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           config?['password_label'] ?? 'Password';
                       final passwordHint =
                           config?['password_hint'] ??
-                              'password is your passport id';
-                      final bool isGuestModeEnabled =
-                          config?['is_guest_mode_enabled'] ?? true;
+                          'password is your passport id';
 
                       return Form(
                         key: _formKey,
@@ -437,8 +458,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         : Icons.visibility_off,
                                   ),
                                   onPressed: () => setState(
-                                        () => _isPasswordVisible =
-                                    !_isPasswordVisible,
+                                    () => _isPasswordVisible =
+                                        !_isPasswordVisible,
                                   ),
                                 ),
                                 border: OutlineInputBorder(
@@ -474,20 +495,149 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               child: _isLoading
                                   ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
                                   : const Text(
-                                'Verify & Login',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                                      'Verify & Login',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+
+                            // ==========================================
+                            // ORIGINAL LOOK & FEEL CTA WITH COMPACT INFO TOOLTIP
+                            // ==========================================
+                            FutureBuilder<Map<String, dynamic>?>(
+                              future: _internalPortalConfigFuture,
+                              builder: (context, portalSnapshot) {
+                                final portalConfig = portalSnapshot.data ?? {};
+                                final bool isGuestModeEnabled =
+                                    portalConfig['is_guest_mode_enabled'] ??
+                                    true;
+                                final String buttonLabel =
+                                    portalConfig['button_label'] ??
+                                    'Login - Internal Portal';
+                                final String adminMessage =
+                                    portalConfig['admin_message'] ??
+                                    'This CTA is visible under database control by the database admin. If you are facing any issues, please contact the DATABASE admin.';
+
+                                if (!isGuestModeEnabled) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Divider(
+                                            color: Colors.grey.shade300,
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                          ),
+                                          child: Text(
+                                            'OR',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Divider(
+                                            color: Colors.grey.shade300,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      children: [
+                                        // Original Standard Look & Feel OutlinedButton
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            onPressed: () =>
+                                                _handleGuestLogin(portalConfig),
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: const Color(
+                                                0xFF2E7D32,
+                                              ),
+                                              padding: const EdgeInsets.all(12),
+                                              side: const BorderSide(
+                                                color: Color(0xFF81C784),
+                                                width: 1.5,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            icon: const Icon(
+                                              Icons.person_pin_rounded,
+                                              size: 20,
+                                              color: Color(0xFF2E7D32),
+                                            ),
+                                            label: Text(
+                                              buttonLabel,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+
+                                        // Small Dedicated Info Icon with Minimal Tooltip
+                                        Tooltip(
+                                          message: adminMessage,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 6,
+                                          ),
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade900,
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          textStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                          ),
+                                          child: Container(
+                                            height: 48,
+                                            width: 32,
+                                            alignment: Alignment.center,
+                                            child: Icon(
+                                              Icons.info_outline_rounded,
+                                              size: 16,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -616,11 +766,11 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   void _openDocumentModal(
-      BuildContext context,
-      String title,
-      String fileUrl,
-      String fileType,
-      ) {
+    BuildContext context,
+    String title,
+    String fileUrl,
+    String fileType,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -637,7 +787,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
         String previewUrl = fileUrl;
         if (isPptx && !fileUrl.contains('officeapps.live.com')) {
           previewUrl =
-          'https://view.officeapps.live.com/op/view.aspx?src=${Uri.encodeComponent(fileUrl)}';
+              'https://view.officeapps.live.com/op/view.aspx?src=${Uri.encodeComponent(fileUrl)}';
         }
 
         ui_web.platformViewRegistry.registerViewFactory(viewId, (int viewId) {
@@ -717,11 +867,11 @@ class _ClientDashboardState extends State<ClientDashboard> {
   }
 
   void _openVideoModal(
-      BuildContext context,
-      String youtubeUrl,
-      String title,
-      String description,
-      ) {
+    BuildContext context,
+    String youtubeUrl,
+    String title,
+    String description,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -953,7 +1103,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                             final logoUrl = snapshot.data?['logo_url'];
                             final hasCustomLogo =
                                 logoUrl != null &&
-                                    logoUrl.toString().trim().isNotEmpty;
+                                logoUrl.toString().trim().isNotEmpty;
 
                             return Center(
                               child: Container(
@@ -980,23 +1130,23 @@ class _ClientDashboardState extends State<ClientDashboard> {
                                   backgroundImage: hasCustomLogo
                                       ? NetworkImage(logoUrl)
                                       : ((photoUrl != null &&
-                                      photoUrl.isNotEmpty)
-                                      ? NetworkImage(photoUrl)
-                                      : null),
+                                                photoUrl.isNotEmpty)
+                                            ? NetworkImage(photoUrl)
+                                            : null),
                                   child:
-                                  (!hasCustomLogo &&
-                                      (photoUrl == null ||
-                                          photoUrl.isEmpty))
+                                      (!hasCustomLogo &&
+                                          (photoUrl == null ||
+                                              photoUrl.isEmpty))
                                       ? Text(
-                                    displayName.isNotEmpty
-                                        ? displayName[0].toUpperCase()
-                                        : 'H',
-                                    style: TextStyle(
-                                      color: const Color(0xFF2E7D32),
-                                      fontSize: isMobile ? 26 : 32,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )
+                                          displayName.isNotEmpty
+                                              ? displayName[0].toUpperCase()
+                                              : 'H',
+                                          style: TextStyle(
+                                            color: const Color(0xFF2E7D32),
+                                            fontSize: isMobile ? 26 : 32,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        )
                                       : null,
                                 ),
                               ),
@@ -1041,7 +1191,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                             final bannerData = snapshot.data;
                             final bannerText =
                                 bannerData?['banner_text'] ??
-                                    '✨ HNB OFFICIAL CLIENT VISIT • 16-10-2026 ✨';
+                                '✨ HNB OFFICIAL CLIENT VISIT • 16-10-2026 ✨';
 
                             return Center(
                               child: Container(
@@ -1089,11 +1239,13 @@ class _ClientDashboardState extends State<ClientDashboard> {
                                     icon: Icons.photo_library_rounded,
                                     label: 'Photos',
                                     onTap: () => _scrollToSection(_photosKey),
+                                    isHighlight: true,
                                   ),
                                   _BannerNavButton(
                                     icon: Icons.videocam_rounded,
                                     label: 'Videos',
                                     onTap: () => _scrollToSection(_videosKey),
+                                    isHighlight: true,
                                   ),
                                   if (hasVirtusaDocs)
                                     _BannerNavButton(
@@ -1107,6 +1259,30 @@ class _ClientDashboardState extends State<ClientDashboard> {
                               ),
                             );
                           },
+                        ),
+
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(
+                              Icons.ads_click_rounded,
+                              size: 11,
+                              color: Color(
+                                0xFFA5D6A7,
+                              ), // Soft mint green for contrast
+                            ),
+                            SizedBox(width: 5),
+                            Text(
+                              'Tap above for quick access',
+                              style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                                color: Colors.white, // Pure crisp white
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1497,9 +1673,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                          CrossAxisAlignment.start,
                                       mainAxisAlignment:
-                                      MainAxisAlignment.center,
+                                          MainAxisAlignment.center,
                                       children: [
                                         Text(
                                           title,
@@ -1516,14 +1692,14 @@ class _ClientDashboardState extends State<ClientDashboard> {
                                           children: [
                                             Container(
                                               padding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 6,
-                                                vertical: 2,
-                                              ),
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: Colors.grey.shade200,
                                                 borderRadius:
-                                                BorderRadius.circular(6),
+                                                    BorderRadius.circular(6),
                                               ),
                                               child: Text(
                                                 fileType.toUpperCase(),
@@ -1703,13 +1879,13 @@ class _BannerNavButton extends StatelessWidget {
             gradient: LinearGradient(
               colors: isHighlight
                   ? [
-                const Color(0xFF81C784).withOpacity(0.50),
-                const Color(0xFF4CAF50).withOpacity(0.60),
-              ]
+                      const Color(0xFF81C784).withOpacity(0.50),
+                      const Color(0xFF4CAF50).withOpacity(0.60),
+                    ]
                   : [
-                Colors.white.withOpacity(0.20),
-                Colors.white.withOpacity(0.10),
-              ],
+                      Colors.white.withOpacity(0.20),
+                      Colors.white.withOpacity(0.10),
+                    ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -1809,11 +1985,11 @@ class _VideoThumbnailCardState extends State<_VideoThumbnailCard> {
                     children: [
                       thumbnailUrl.isNotEmpty
                           ? Image.network(
-                        thumbnailUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Container(color: Colors.black12),
-                      )
+                              thumbnailUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  Container(color: Colors.black12),
+                            )
                           : Container(color: Colors.black12),
                       Container(color: Colors.black.withOpacity(0.25)),
                       Center(
@@ -2017,14 +2193,14 @@ class _VideoPlayerDialogState extends State<_VideoPlayerDialog> {
                     _controller != null
                         ? YoutubePlayer(controller: _controller!)
                         : Container(
-                      color: Colors.black,
-                      child: const Center(
-                        child: Text(
-                          'Invalid Video URL',
-                          style: TextStyle(color: Colors.redAccent),
-                        ),
-                      ),
-                    ),
+                            color: Colors.black,
+                            child: const Center(
+                              child: Text(
+                                'Invalid Video URL',
+                                style: TextStyle(color: Colors.redAccent),
+                              ),
+                            ),
+                          ),
                     if (_isLoading)
                       AnimatedOpacity(
                         opacity: _isLoading ? 1.0 : 0.0,
@@ -2146,7 +2322,7 @@ class _BeautifiedPhotoCardState extends State<_BeautifiedPhotoCard>
 
     Future.delayed(
       Duration(milliseconds: (widget.index * 60).clamp(0, 600)),
-          () {
+      () {
         if (mounted) _animController.forward();
       },
     );
